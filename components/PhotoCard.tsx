@@ -93,10 +93,10 @@ export function PhotoCard({
 
       {/* Checkbox */}
       <div
-        className={`absolute top-2 left-2 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+        className={`absolute top-2 left-2 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all shadow-md ${
           isSelected
             ? 'bg-blue-500 border-blue-500 text-white'
-            : 'bg-white/80 border-gray-300 opacity-0 group-hover:opacity-100'
+            : 'bg-white/90 border-gray-400'
         }`}
         onClick={handleCheckboxClick}
       >
