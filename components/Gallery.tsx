@@ -213,7 +213,7 @@ export function Gallery({ metadata }: GalleryProps) {
             </div>
           )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
             {files.map((file, index) => (
               <PhotoCard
                 key={file.uuid}
