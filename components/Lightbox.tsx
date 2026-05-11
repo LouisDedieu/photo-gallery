@@ -4,7 +4,7 @@ import { useEffect, useCallback, useState } from 'react'
 import { GalleryFile } from '@/lib/types'
 
 interface LightboxProps {
-  downloadHost: string
+  transferId: string
   file: GalleryFile
   isSelected: boolean
   onSelect: (fileUuid: string) => void
@@ -16,7 +16,7 @@ interface LightboxProps {
 }
 
 export function Lightbox({
-  downloadHost,
+  transferId,
   file,
   isSelected,
   onSelect,
@@ -28,7 +28,7 @@ export function Lightbox({
 }: LightboxProps) {
   const [isLoading, setIsLoading] = useState(true)
 
-  const imageUrl = `/api/image?downloadHost=${encodeURIComponent(downloadHost)}&fileUuid=${file.uuid}`
+  const imageUrl = `/api/image?transferId=${encodeURIComponent(transferId)}&fileUuid=${file.uuid}`
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -66,7 +66,7 @@ export function Lightbox({
   }, [file.uuid])
 
   const handleDownload = async () => {
-    const url = `/api/image?downloadHost=${encodeURIComponent(downloadHost)}&fileUuid=${file.uuid}`
+    const url = `/api/image?transferId=${encodeURIComponent(transferId)}&fileUuid=${file.uuid}`
 
     const response = await fetch(url)
     const blob = await response.blob()

@@ -3,18 +3,18 @@ import { streamFile } from '@/lib/swisstransfer'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const downloadHost = searchParams.get('downloadHost')
+  const transferId = searchParams.get('transferId')
   const fileUuid = searchParams.get('fileUuid')
 
-  if (!downloadHost || !fileUuid) {
+  if (!transferId || !fileUuid) {
     return NextResponse.json(
-      { error: 'Missing downloadHost or fileUuid' },
+      { error: 'Missing transferId or fileUuid' },
       { status: 400 }
     )
   }
 
   try {
-    const response = await streamFile(downloadHost, fileUuid)
+    const response = await streamFile(transferId, fileUuid)
 
     const contentType = response.headers.get('content-type') || 'image/jpeg'
     const body = response.body

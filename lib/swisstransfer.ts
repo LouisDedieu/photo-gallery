@@ -39,7 +39,6 @@ export async function getTransferMetadata(transferId: string): Promise<TransferM
 
   return {
     transferId,
-    downloadHost: linkData.downloadHost,
     expiresAt: container.expiredDate,
     createdAt: container.createdDate,
     files,
@@ -47,8 +46,8 @@ export async function getTransferMetadata(transferId: string): Promise<TransferM
   }
 }
 
-export function getDownloadUrl(downloadHost: string, fileUuid: string): string {
-  return `https://${downloadHost}/${fileUuid}`
+export function getDownloadUrl(transferId: string, fileUuid: string): string {
+  return `${SWISSTRANSFER_API_BASE}/download/${transferId}/${fileUuid}`
 }
 
 async function delay(ms: number): Promise<void> {
@@ -56,11 +55,11 @@ async function delay(ms: number): Promise<void> {
 }
 
 export async function streamFile(
-  downloadHost: string,
+  transferId: string,
   fileUuid: string,
   retries = 3
 ): Promise<Response> {
-  const downloadUrl = getDownloadUrl(downloadHost, fileUuid)
+  const downloadUrl = getDownloadUrl(transferId, fileUuid)
 
   for (let attempt = 0; attempt < retries; attempt++) {
     const response = await fetch(downloadUrl, {
@@ -68,6 +67,7 @@ export async function streamFile(
         ...DEFAULT_HEADERS,
         'Accept': 'image/*, */*',
       },
+      redirect: 'follow', // Follow redirects
     })
 
     if (response.ok) {

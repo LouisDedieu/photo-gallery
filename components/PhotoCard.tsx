@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 
 interface PhotoCardProps {
-  downloadHost: string
+  transferId: string
   fileUuid: string
   fileName: string
   isSelected: boolean
@@ -12,7 +12,7 @@ interface PhotoCardProps {
 }
 
 export function PhotoCard({
-  downloadHost,
+  transferId,
   fileUuid,
   fileName,
   isSelected,
@@ -24,7 +24,7 @@ export function PhotoCard({
   const [retryCount, setRetryCount] = useState(0)
   const maxRetries = 3
 
-  const imageUrl = `/api/image?downloadHost=${encodeURIComponent(downloadHost)}&fileUuid=${fileUuid}`
+  const imageUrl = `/api/image?transferId=${encodeURIComponent(transferId)}&fileUuid=${fileUuid}`
 
   // Retry loading image after delay if rate limited
   useEffect(() => {
@@ -44,11 +44,7 @@ export function PhotoCard({
   }
 
   const handleError = () => {
-    if (retryCount < maxRetries) {
-      setHasError(true)
-    } else {
-      setHasError(true)
-    }
+    setHasError(true)
   }
 
   return (

@@ -56,7 +56,6 @@ export interface GalleryFile {
 
 export interface TransferMetadata {
   transferId: string
-  downloadHost: string
   expiresAt: string
   createdAt: string
   files: GalleryFile[]

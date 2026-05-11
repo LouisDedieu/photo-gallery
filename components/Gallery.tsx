@@ -30,7 +30,7 @@ export function Gallery({ metadata }: GalleryProps) {
   const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 })
   const [sessionId, setSessionId] = useState<string>('')
 
-  const { transferId, downloadHost, files, expiresAt } = metadata
+  const { transferId, files, expiresAt } = metadata
 
   // Create a map for quick file lookup
   const fileMap = new Map(files.map((f) => [f.uuid, f]))
@@ -114,7 +114,7 @@ export function Gallery({ metadata }: GalleryProps) {
 
         try {
           const response = await fetch(
-            `/api/image?downloadHost=${encodeURIComponent(downloadHost)}&fileUuid=${fileUuid}`
+            `/api/image?transferId=${encodeURIComponent(transferId)}&fileUuid=${fileUuid}`
           )
 
           if (response.ok) {
@@ -217,7 +217,7 @@ export function Gallery({ metadata }: GalleryProps) {
             {files.map((file, index) => (
               <PhotoCard
                 key={file.uuid}
-                downloadHost={downloadHost}
+                transferId={transferId}
                 fileUuid={file.uuid}
                 fileName={file.fileName}
                 isSelected={selectedIds.has(file.uuid)}
@@ -246,7 +246,7 @@ export function Gallery({ metadata }: GalleryProps) {
       {/* Lightbox */}
       {currentFile && (
         <Lightbox
-          downloadHost={downloadHost}
+          transferId={transferId}
           file={currentFile}
           isSelected={selectedIds.has(currentFile.uuid)}
           onSelect={handleSelect}
