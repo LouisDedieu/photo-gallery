@@ -1,27 +1,43 @@
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header skeleton */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48" />
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mt-2" />
+    <div className="apple-window">
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar skeleton */}
+        <aside className="apple-sidebar">
+          <div className="window-controls">
+            <div className="window-control close" />
+            <div className="window-control minimize" />
+            <div className="window-control maximize" />
           </div>
-        </div>
-      </header>
 
-      {/* Gallery skeleton */}
-      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {Array.from({ length: 15 }).map((_, i) => (
-            <div
-              key={i}
-              className="aspect-square rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse"
-            />
-          ))}
-        </div>
-      </main>
+          <div className="pt-10 px-4">
+            <div className="h-3 w-16 rounded skeleton-pulse" />
+            <div className="mt-4 h-8 w-full rounded-md skeleton-light" />
+
+            <div className="mt-8 h-3 w-16 rounded skeleton-pulse" />
+            <div className="mt-4 h-8 w-full rounded-md skeleton-blue" />
+          </div>
+        </aside>
+
+        {/* Main content skeleton */}
+        <main className="apple-main">
+          <header className="apple-header">
+            <div>
+              <div className="h-7 w-48 rounded-md skeleton-pulse" />
+              <div className="h-4 w-24 rounded mt-2 skeleton-light" />
+            </div>
+          </header>
+
+          <div className="photo-grid">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={i}
+                className="photo-card skeleton-shimmer"
+              />
+            ))}
+          </div>
+        </main>
+      </div>
     </div>
   )
 }

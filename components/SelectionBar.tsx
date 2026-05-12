@@ -24,47 +24,57 @@ export function SelectionBar({
     : 0
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-gray-900 text-white rounded-full shadow-2xl px-6 py-4 flex items-center gap-4 animate-in slide-in-from-bottom-4">
+    <div className="apple-floating-bar">
       {/* Selection count */}
-      <span className="font-medium">
-        {selectedCount} photo{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''}
+      <span className="bar-text">
+        {selectedCount} photo{selectedCount > 1 ? 's' : ''} selectionnee{selectedCount > 1 ? 's' : ''}
       </span>
 
       {/* Divider */}
-      <div className="w-px h-6 bg-white/20" />
+      <div className="bar-divider" />
 
       {/* Clear selection button */}
       <button
         onClick={onClearSelection}
-        className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/10 transition-colors"
         disabled={isDownloading}
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
-        Désélectionner
+        Annuler
       </button>
 
       {/* Download button */}
       <button
         onClick={onDownload}
         disabled={isDownloading}
-        className="flex items-center gap-2 px-6 py-2 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[180px] justify-center"
+        className="primary"
+        style={{ minWidth: '160px' }}
       >
         {isDownloading ? (
           <>
-            <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-            <span>{downloadProgress.current}/{downloadProgress.total} ({progressPercent}%)</span>
+            <div
+              className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+              style={{ animation: 'spin 0.8s linear infinite' }}
+            />
+            <span>{downloadProgress.current}/{downloadProgress.total}</span>
           </>
         ) : (
           <>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            Télécharger ZIP
+            Telecharger
           </>
         )}
       </button>
+
+      <style jsx>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   )
 }

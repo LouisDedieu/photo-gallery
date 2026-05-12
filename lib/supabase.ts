@@ -27,3 +27,11 @@ export function getPublicUrl(storagePath: string): string {
   const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath)
   return data.publicUrl
 }
+
+export function getThumbnailUrl(storagePath: string, width = 400, quality = 75): string {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!supabaseUrl) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL')
+  }
+  return `${supabaseUrl}/storage/v1/render/image/public/${STORAGE_BUCKET}/${storagePath}?width=${width}&quality=${quality}&resize=contain`
+}

@@ -8,7 +8,7 @@ interface PhotoCardProps {
   isSelected: boolean
   onSelect: (fileUuid: string) => void
   onClick: () => void
-  preserveAspectRatio?: boolean
+  useOriginalRatio?: boolean
 }
 
 export function PhotoCard({
@@ -16,7 +16,7 @@ export function PhotoCard({
   isSelected,
   onSelect,
   onClick,
-  preserveAspectRatio = false,
+  useOriginalRatio = true,
 }: PhotoCardProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [hasError, setHasError] = useState(false)
@@ -28,59 +28,51 @@ export function PhotoCard({
 
   return (
     <div
-      className={`relative group cursor-pointer overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 ${preserveAspectRatio ? 'break-inside-avoid mb-4' : 'aspect-square'}`}
+      className={`photo-card ${isSelected ? 'selected' : ''}`}
       onClick={onClick}
     >
       {/* Loading skeleton */}
       {!isLoaded && !hasError && (
-        <div className="absolute inset-0 animate-pulse bg-gray-200 dark:bg-gray-700" />
+        <div
+          className="absolute inset-0 skeleton-shimmer"
+          style={useOriginalRatio ? { minHeight: '150px' } : undefined}
+        />
       )}
 
       {/* Error state */}
       {hasError && (
-        <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-gray-100"
+          style={useOriginalRatio ? { minHeight: '150px' } : undefined}
+        >
+          <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
       )}
 
-      {/* Image - use direct Supabase URL */}
+      {/* Image - using thumbnail for faster loading */}
       {!hasError && (
         <img
-          src={file.url}
+          src={file.thumbnailUrl}
           alt={file.fileName}
-          className={`w-full transition-all duration-300 group-hover:scale-105 ${preserveAspectRatio ? 'h-auto' : 'h-full object-cover'} ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setIsLoaded(true)}
           onError={() => setHasError(true)}
           loading="lazy"
         />
       )}
 
-      {/* Selection overlay */}
-      <div
-        className={`absolute inset-0 transition-opacity ${isSelected ? 'bg-blue-500/30' : 'bg-black/0 group-hover:bg-black/20'}`}
-      />
-
       {/* Checkbox */}
       <div
-        className={`absolute top-2 left-2 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all shadow-md ${
-          isSelected
-            ? 'bg-blue-500 border-blue-500 text-white'
-            : 'bg-white/90 border-gray-400'
-        }`}
+        className={`photo-checkbox ${isSelected ? 'selected' : ''}`}
         onClick={handleCheckboxClick}
       >
         {isSelected && (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         )}
-      </div>
-
-      {/* Filename on hover */}
-      <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-        <p className="text-white text-sm truncate">{file.fileName}</p>
       </div>
     </div>
   )

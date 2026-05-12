@@ -1,4 +1,4 @@
-import { getSupabase, STORAGE_BUCKET } from './supabase'
+import { getSupabase, STORAGE_BUCKET, getThumbnailUrl } from './supabase'
 import { TransferMetadata, GalleryFile } from './types'
 
 export async function getGalleryBySlug(slug: string): Promise<TransferMetadata> {
@@ -25,7 +25,7 @@ export async function getGalleryBySlug(slug: string): Promise<TransferMetadata> 
     return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].includes(ext || '')
   })
 
-  // Build gallery files with public URLs
+  // Build gallery files with public URLs and thumbnail URLs
   const galleryFiles: GalleryFile[] = imageFiles.map((file) => {
     const storagePath = `${slug}/${file.name}`
     const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath)
@@ -36,6 +36,7 @@ export async function getGalleryBySlug(slug: string): Promise<TransferMetadata> 
       fileSize: file.metadata?.size || 0,
       mimeType: file.metadata?.mimetype || 'image/jpeg',
       url: data.publicUrl,
+      thumbnailUrl: getThumbnailUrl(storagePath),
     }
   })
 

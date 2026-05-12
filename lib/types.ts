@@ -4,6 +4,7 @@ export interface GalleryFile {
   fileSize: number
   mimeType: string
   url: string
+  thumbnailUrl: string
 }
 
 export interface TransferMetadata {
