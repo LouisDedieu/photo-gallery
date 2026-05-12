@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { Gallery } from '@/components/Gallery'
-import { getTransferMetadata } from '@/lib/swisstransfer'
+import { getGalleryBySlug } from '@/lib/gallery'
 import { Metadata } from 'next'
 
 interface PageProps {
@@ -20,7 +20,7 @@ export default async function GalleryPage({ params }: PageProps) {
   const { transferId } = await params
 
   try {
-    const metadata = await getTransferMetadata(transferId)
+    const metadata = await getGalleryBySlug(transferId)
 
     return <Gallery metadata={metadata} />
   } catch (error) {

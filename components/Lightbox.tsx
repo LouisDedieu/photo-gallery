@@ -4,7 +4,6 @@ import { useEffect, useCallback, useState } from 'react'
 import { GalleryFile } from '@/lib/types'
 
 interface LightboxProps {
-  transferId: string
   file: GalleryFile
   isSelected: boolean
   onSelect: (fileUuid: string) => void
@@ -16,7 +15,6 @@ interface LightboxProps {
 }
 
 export function Lightbox({
-  transferId,
   file,
   isSelected,
   onSelect,
@@ -27,8 +25,6 @@ export function Lightbox({
   hasNext,
 }: LightboxProps) {
   const [isLoading, setIsLoading] = useState(true)
-
-  const imageUrl = `/api/image?transferId=${encodeURIComponent(transferId)}&fileUuid=${file.uuid}`
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -66,9 +62,7 @@ export function Lightbox({
   }, [file.uuid])
 
   const handleDownload = async () => {
-    const url = `/api/image?transferId=${encodeURIComponent(transferId)}&fileUuid=${file.uuid}`
-
-    const response = await fetch(url)
+    const response = await fetch(file.url)
     const blob = await response.blob()
     const objectUrl = URL.createObjectURL(blob)
 
@@ -128,7 +122,7 @@ export function Lightbox({
           </div>
         )}
         <img
-          src={imageUrl}
+          src={file.url}
           alt={file.fileName}
           className={`max-w-full max-h-[85vh] object-contain transition-opacity ${isLoading ? 'opacity-0' : 'opacity-100'}`}
           onLoad={() => setIsLoading(false)}

@@ -5,22 +5,22 @@ import {
   removeFromSelection,
   clearSelection,
   setSelection,
-} from '@/lib/kv'
+} from '@/lib/selections'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const transferId = searchParams.get('transferId')
+  const galleryId = searchParams.get('galleryId')
   const sessionId = searchParams.get('sessionId')
 
-  if (!transferId || !sessionId) {
+  if (!galleryId || !sessionId) {
     return NextResponse.json(
-      { error: 'Missing transferId or sessionId' },
+      { error: 'Missing galleryId or sessionId' },
       { status: 400 }
     )
   }
 
   try {
-    const selection = await getSelection(transferId, sessionId)
+    const selection = await getSelection(galleryId, sessionId)
     return NextResponse.json({ selection })
   } catch (error) {
     console.error('Error getting selection:', error)
@@ -34,11 +34,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { transferId, sessionId, fileUuid, fileUuids, action } = body
+    const { galleryId, sessionId, fileUuid, fileUuids, action } = body
 
-    if (!transferId || !sessionId) {
+    if (!galleryId || !sessionId) {
       return NextResponse.json(
-        { error: 'Missing transferId or sessionId' },
+        { error: 'Missing galleryId or sessionId' },
         { status: 400 }
       )
     }
@@ -46,15 +46,13 @@ export async function POST(request: NextRequest) {
     let selection: string[]
 
     if (action === 'set' && Array.isArray(fileUuids)) {
-      // Set the entire selection at once
-      await setSelection(transferId, sessionId, fileUuids)
+      await setSelection(galleryId, sessionId, fileUuids)
       selection = fileUuids
     } else if (fileUuid) {
-      // Add or remove a single file
       if (action === 'add') {
-        selection = await addToSelection(transferId, sessionId, fileUuid)
+        selection = await addToSelection(galleryId, sessionId, fileUuid)
       } else if (action === 'remove') {
-        selection = await removeFromSelection(transferId, sessionId, fileUuid)
+        selection = await removeFromSelection(galleryId, sessionId, fileUuid)
       } else {
         return NextResponse.json(
           { error: 'Invalid action. Use "add", "remove", or "set"' },
@@ -80,18 +78,18 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const transferId = searchParams.get('transferId')
+  const galleryId = searchParams.get('galleryId')
   const sessionId = searchParams.get('sessionId')
 
-  if (!transferId || !sessionId) {
+  if (!galleryId || !sessionId) {
     return NextResponse.json(
-      { error: 'Missing transferId or sessionId' },
+      { error: 'Missing galleryId or sessionId' },
       { status: 400 }
     )
   }
 
   try {
-    await clearSelection(transferId, sessionId)
+    await clearSelection(galleryId, sessionId)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error clearing selection:', error)

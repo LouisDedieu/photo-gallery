@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getTransferMetadata } from '@/lib/swisstransfer'
+import { getGalleryBySlug } from '@/lib/gallery'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const metadata = await getTransferMetadata(transferId)
+    const metadata = await getGalleryBySlug(transferId)
     return NextResponse.json(metadata)
   } catch (error) {
     console.error('Error fetching transfer:', error)
@@ -21,14 +21,14 @@ export async function GET(request: NextRequest) {
     if (error instanceof Error) {
       if (error.message.includes('not found') || error.message.includes('expired')) {
         return NextResponse.json(
-          { error: 'Transfer not found or expired' },
+          { error: 'Gallery not found or expired' },
           { status: 404 }
         )
       }
     }
 
     return NextResponse.json(
-      { error: 'Failed to fetch transfer metadata' },
+      { error: 'Failed to fetch gallery metadata' },
       { status: 500 }
     )
   }

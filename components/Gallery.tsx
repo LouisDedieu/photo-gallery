@@ -29,8 +29,9 @@ export function Gallery({ metadata }: GalleryProps) {
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 })
   const [sessionId, setSessionId] = useState<string>('')
+  const [preserveAspectRatio, setPreserveAspectRatio] = useState(true)
 
-  const { transferId, files, expiresAt } = metadata
+  const { transferId, galleryId, files, expiresAt } = metadata
 
   // Create a map for quick file lookup
   const fileMap = new Map(files.map((f) => [f.uuid, f]))
@@ -40,7 +41,7 @@ export function Gallery({ metadata }: GalleryProps) {
     const sid = getSessionId()
     setSessionId(sid)
 
-    fetch(`/api/selection?transferId=${transferId}&sessionId=${sid}`)
+    fetch(`/api/selection?galleryId=${galleryId}&sessionId=${sid}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.selection) {
@@ -48,7 +49,7 @@ export function Gallery({ metadata }: GalleryProps) {
         }
       })
       .catch(console.error)
-  }, [transferId])
+  }, [galleryId])
 
   // Save selection to server
   const saveSelection = useCallback(
@@ -60,7 +61,7 @@ export function Gallery({ metadata }: GalleryProps) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            transferId,
+            galleryId,
             sessionId,
             fileUuids: Array.from(ids),
             action: 'set',
@@ -70,7 +71,7 @@ export function Gallery({ metadata }: GalleryProps) {
         console.error('Failed to save selection:', error)
       }
     },
-    [transferId, sessionId]
+    [galleryId, sessionId]
   )
 
   const handleSelect = useCallback(
@@ -113,9 +114,8 @@ export function Gallery({ metadata }: GalleryProps) {
         setDownloadProgress({ current: i + 1, total: selectedUuids.length })
 
         try {
-          const response = await fetch(
-            `/api/image?transferId=${encodeURIComponent(transferId)}&fileUuid=${fileUuid}`
-          )
+          // Use direct Supabase URL
+          const response = await fetch(fileInfo?.url || '')
 
           if (response.ok) {
             const blob = await response.blob()
@@ -181,6 +181,23 @@ export function Gallery({ metadata }: GalleryProps) {
               </div>
 
               <div className="flex items-center gap-2">
+                {/* Toggle aspect ratio */}
+                <button
+                  onClick={() => setPreserveAspectRatio(!preserveAspectRatio)}
+                  className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                  title={preserveAspectRatio ? 'Afficher en carrés' : 'Ratio original'}
+                >
+                  {preserveAspectRatio ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={2} />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="2" y="5" width="20" height="14" rx="2" strokeWidth={2} />
+                    </svg>
+                  )}
+                </button>
+
                 {selectedIds.size < files.length ? (
                   <button
                     onClick={() => {
@@ -213,16 +230,18 @@ export function Gallery({ metadata }: GalleryProps) {
             </div>
           )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          <div className={preserveAspectRatio
+            ? "columns-2 sm:columns-3 gap-4 max-w-4xl mx-auto"
+            : "grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-4xl mx-auto"
+          }>
             {files.map((file, index) => (
               <PhotoCard
                 key={file.uuid}
-                transferId={transferId}
-                fileUuid={file.uuid}
-                fileName={file.fileName}
+                file={file}
                 isSelected={selectedIds.has(file.uuid)}
                 onSelect={handleSelect}
                 onClick={() => openLightbox(index)}
+                preserveAspectRatio={preserveAspectRatio}
               />
             ))}
           </div>
@@ -236,7 +255,7 @@ export function Gallery({ metadata }: GalleryProps) {
                 Aucune photo trouvée
               </h3>
               <p className="mt-2 text-gray-500 dark:text-gray-400">
-                Ce transfert ne contient pas de photos, ou les fichiers ont expiré.
+                Cette galerie ne contient pas de photos, ou les fichiers ont expiré.
               </p>
             </div>
           )}
@@ -246,7 +265,6 @@ export function Gallery({ metadata }: GalleryProps) {
       {/* Lightbox */}
       {currentFile && (
         <Lightbox
-          transferId={transferId}
           file={currentFile}
           isSelected={selectedIds.has(currentFile.uuid)}
           onSelect={handleSelect}
