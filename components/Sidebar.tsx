@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useCallback, useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { projects, categories, categoryLabels, albums, type Category } from '@/lib/portfolio-config'
 
@@ -74,10 +74,12 @@ interface SidebarProps {
   currentGallerySlug?: string
   isDarkMode: boolean
   onToggleDarkMode: () => void
+  onScrollToSection?: (sectionId: string) => void
 }
 
-export function Sidebar({ currentGalleryName, currentGallerySlug, isDarkMode, onToggleDarkMode }: SidebarProps) {
+export function Sidebar({ currentGalleryName, currentGallerySlug, isDarkMode, onToggleDarkMode, onScrollToSection }: SidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
 
   const SIDEBAR_MIN = 130
   const SIDEBAR_MAX = 480
@@ -146,6 +148,20 @@ export function Sidebar({ currentGalleryName, currentGallerySlug, isDarkMode, on
     ? projects.find(p => p.slug === currentGallerySlug)?.category
     : null
 
+  const handleCategoryClick = (e: React.MouseEvent, category: Category) => {
+    e.preventDefault()
+
+    if (isHome && onScrollToSection) {
+      // On home page - smooth scroll to section
+      onScrollToSection(category)
+      // Update URL hash without triggering navigation
+      window.history.pushState(null, '', `/#${category}`)
+    } else {
+      // On another page - navigate to home with hash
+      router.push(`/#${category}`)
+    }
+  }
+
   return (
     <aside className="apple-sidebar" style={{ width: sidebarWidth, minWidth: sidebarWidth }}>
       <div className="sidebar-resize-handle" onMouseDown={handleResizeStart} onTouchStart={handleResizeStart} />
@@ -167,14 +183,15 @@ export function Sidebar({ currentGalleryName, currentGallerySlug, isDarkMode, on
           <div className="sidebar-section">
             <div className="sidebar-section-title">Portfolio</div>
             {categories.map((category) => (
-              <Link
+              <a
                 key={category}
                 href={`/#${category}`}
+                onClick={(e) => handleCategoryClick(e, category)}
                 className={`sidebar-item ${currentProjectCategory === category ? 'active' : ''}`}
               >
                 <CategoryIcon className="sidebar-icon" />
                 <span>{categoryLabels[category]}</span>
-              </Link>
+              </a>
             ))}
           </div>
 

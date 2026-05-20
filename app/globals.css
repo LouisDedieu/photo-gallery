@@ -192,12 +192,13 @@ button, a, [role="button"] {
   color: var(--apple-blue);
 }
 
-/* Main content area */
+/* Main content area - Lenis scroll container */
 .apple-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: var(--apple-bg);
 }
 
@@ -231,7 +232,6 @@ button, a, [role="button"] {
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   padding: 24px;
-  overflow-y: auto;
   align-content: start;
 }
 
@@ -289,7 +289,6 @@ button, a, [role="button"] {
   display: flex;
   width: auto;
   padding: 24px;
-  overflow-y: auto;
 }
 
 .masonry-column {
@@ -566,7 +565,6 @@ button, a, [role="button"] {
   display: flex;
   flex-direction: column;
   padding: 24px;
-  overflow-y: auto;
 }
 
 .portfolio-hero {
