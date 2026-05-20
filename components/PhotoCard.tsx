@@ -6,9 +6,10 @@ import { GalleryFile } from '@/lib/types'
 interface PhotoCardProps {
   file: GalleryFile
   isSelected: boolean
-  onSelect: (fileUuid: string) => void
+  onSelect?: (fileUuid: string) => void
   onClick: () => void
   useOriginalRatio?: boolean
+  hideCheckbox?: boolean
 }
 
 export function PhotoCard({
@@ -17,13 +18,14 @@ export function PhotoCard({
   onSelect,
   onClick,
   useOriginalRatio = true,
+  hideCheckbox = false,
 }: PhotoCardProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [hasError, setHasError] = useState(false)
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    onSelect(file.uuid)
+    onSelect?.(file.uuid)
   }
 
   return (
@@ -63,17 +65,19 @@ export function PhotoCard({
         />
       )}
 
-      {/* Checkbox */}
-      <div
-        className={`photo-checkbox ${isSelected ? 'selected' : ''}`}
-        onClick={handleCheckboxClick}
-      >
-        {isSelected && (
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-        )}
-      </div>
+      {/* Checkbox (hidden for portfolio) */}
+      {!hideCheckbox && (
+        <div
+          className={`photo-checkbox ${isSelected ? 'selected' : ''}`}
+          onClick={handleCheckboxClick}
+        >
+          {isSelected && (
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </div>
+      )}
     </div>
   )
 }

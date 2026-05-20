@@ -6,12 +6,13 @@ import { GalleryFile } from '@/lib/types'
 interface LightboxProps {
   file: GalleryFile
   isSelected: boolean
-  onSelect: (fileUuid: string) => void
+  onSelect?: (fileUuid: string) => void
   onClose: () => void
   onPrev: () => void
   onNext: () => void
   hasPrev: boolean
   hasNext: boolean
+  hideSelection?: boolean
 }
 
 export function Lightbox({
@@ -23,6 +24,7 @@ export function Lightbox({
   onNext,
   hasPrev,
   hasNext,
+  hideSelection = false,
 }: LightboxProps) {
   const [isLoading, setIsLoading] = useState(true)
 
@@ -39,12 +41,14 @@ export function Lightbox({
           if (hasNext) onNext()
           break
         case ' ':
-          e.preventDefault()
-          onSelect(file.uuid)
+          if (!hideSelection && onSelect) {
+            e.preventDefault()
+            onSelect(file.uuid)
+          }
           break
       }
     },
-    [onClose, onPrev, onNext, onSelect, hasPrev, hasNext, file.uuid]
+    [onClose, onPrev, onNext, onSelect, hasPrev, hasNext, file.uuid, hideSelection]
   )
 
   useEffect(() => {
@@ -139,44 +143,49 @@ export function Lightbox({
           {file.fileName}
         </span>
 
-        <div className="w-px h-5 bg-white/20" />
+        {/* Selection and download buttons (hidden for portfolio) */}
+        {!hideSelection && (
+          <>
+            <div className="w-px h-5 bg-white/20" />
 
-        {/* Select button */}
-        <button
-          onClick={() => onSelect(file.uuid)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-            isSelected
-              ? 'bg-[var(--apple-blue)] text-white'
-              : 'text-white hover:bg-white/10'
-          }`}
-        >
-          {isSelected ? (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-              Selectionnee
-            </>
-          ) : (
-            <>
+            {/* Select button */}
+            <button
+              onClick={() => onSelect?.(file.uuid)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                isSelected
+                  ? 'bg-[var(--apple-blue)] text-white'
+                  : 'text-white hover:bg-white/10'
+              }`}
+            >
+              {isSelected ? (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Selectionnee
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Selectionner
+                </>
+              )}
+            </button>
+
+            {/* Download button */}
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-medium hover:bg-white/10 transition-colors"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Selectionner
-            </>
-          )}
-        </button>
-
-        {/* Download button */}
-        <button
-          onClick={handleDownload}
-          className="flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-medium hover:bg-white/10 transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          Telecharger
-        </button>
+              Telecharger
+            </button>
+          </>
+        )}
       </div>
 
       <style jsx>{`
