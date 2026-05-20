@@ -69,15 +69,25 @@ function AlbumIcon({ className }: { className?: string }) {
   )
 }
 
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 interface SidebarProps {
   currentGalleryName?: string
   currentGallerySlug?: string
   isDarkMode: boolean
   onToggleDarkMode: () => void
   onScrollToSection?: (sectionId: string) => void
+  isMobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
-export function Sidebar({ currentGalleryName, currentGallerySlug, isDarkMode, onToggleDarkMode, onScrollToSection }: SidebarProps) {
+export function Sidebar({ currentGalleryName, currentGallerySlug, isDarkMode, onToggleDarkMode, onScrollToSection, isMobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -163,8 +173,20 @@ export function Sidebar({ currentGalleryName, currentGallerySlug, isDarkMode, on
   }
 
   return (
-    <aside className="apple-sidebar" style={{ width: sidebarWidth, minWidth: sidebarWidth }}>
+    <aside className={`apple-sidebar ${isMobileOpen ? 'mobile-open' : ''}`} style={{ width: sidebarWidth, minWidth: sidebarWidth }}>
       <div className="sidebar-resize-handle" onMouseDown={handleResizeStart} onTouchStart={handleResizeStart} />
+
+      {/* Mobile close button */}
+      {onMobileClose && (
+        <button
+          className="mobile-sidebar-close"
+          onClick={onMobileClose}
+          aria-label="Fermer le menu"
+        >
+          <CloseIcon className="w-5 h-5" />
+        </button>
+      )}
+
       <div className="flex flex-col h-full">
         <div className="flex-1 overflow-y-auto">
           {/* Navigation */}

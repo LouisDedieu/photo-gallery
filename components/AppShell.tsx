@@ -5,6 +5,14 @@ import { usePathname } from 'next/navigation'
 import Lenis from 'lenis'
 import { Sidebar } from './Sidebar'
 
+function MenuIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 12h18M3 6h18M3 18h18" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 interface AppShellProps {
   children: ReactNode
   currentGalleryName?: string
@@ -13,6 +21,7 @@ interface AppShellProps {
 
 export function AppShell({ children, currentGalleryName, currentGallerySlug }: AppShellProps) {
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   const wrapperRef = useRef<HTMLElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const lenisRef = useRef<Lenis | null>(null)
@@ -100,6 +109,12 @@ export function AppShell({ children, currentGalleryName, currentGallerySlug }: A
   }, [pathname])
 
   const handleToggleDarkMode = () => setIsDarkMode(!isDarkMode)
+  const handleCloseMobileSidebar = () => setIsMobileSidebarOpen(false)
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setIsMobileSidebarOpen(false)
+  }, [pathname])
 
   const handleScrollToSection = useCallback((sectionId: string) => {
     if (lenisRef.current) {
@@ -112,6 +127,23 @@ export function AppShell({ children, currentGalleryName, currentGallerySlug }: A
 
   return (
     <div className="apple-window">
+      {/* Mobile hamburger button */}
+      <button
+        className="mobile-menu-button"
+        onClick={() => setIsMobileSidebarOpen(true)}
+        aria-label="Ouvrir le menu"
+      >
+        <MenuIcon className="w-6 h-6" />
+      </button>
+
+      {/* Mobile overlay */}
+      {isMobileSidebarOpen && (
+        <div
+          className="mobile-sidebar-overlay"
+          onClick={handleCloseMobileSidebar}
+        />
+      )}
+
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           currentGalleryName={currentGalleryName}
@@ -119,6 +151,8 @@ export function AppShell({ children, currentGalleryName, currentGallerySlug }: A
           isDarkMode={isDarkMode}
           onToggleDarkMode={handleToggleDarkMode}
           onScrollToSection={handleScrollToSection}
+          isMobileOpen={isMobileSidebarOpen}
+          onMobileClose={handleCloseMobileSidebar}
         />
         <main ref={wrapperRef} className="apple-main">
           <div ref={contentRef}>

@@ -724,3 +724,122 @@ button, a, [role="button"] {
     padding: 12px 8px;
   }
 }
+
+/* ========================================
+   Mobile Navigation
+   ======================================== */
+
+/* Mobile menu button - only visible on mobile */
+.mobile-menu-button {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 150;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--apple-bg);
+  color: var(--apple-text-primary);
+  box-shadow: var(--apple-shadow-md);
+  border: 1px solid var(--apple-border);
+}
+
+.mobile-menu-button:hover {
+  background: var(--apple-bg-secondary);
+}
+
+.mobile-menu-button:active {
+  transform: scale(0.95);
+}
+
+/* Mobile sidebar overlay */
+.mobile-sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+/* Mobile close button in sidebar */
+.mobile-sidebar-close {
+  display: none;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--item-hover);
+  color: var(--apple-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.mobile-sidebar-close:hover {
+  background: var(--apple-border-strong);
+  color: var(--apple-text-primary);
+}
+
+@media (max-width: 640px) {
+  /* Show mobile menu button */
+  .mobile-menu-button {
+    display: flex;
+  }
+
+  /* Show overlay when sidebar is open */
+  .mobile-sidebar-overlay {
+    display: block;
+  }
+
+  /* Mobile sidebar - slide in from left */
+  .apple-sidebar {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 190;
+    width: 280px !important;
+    min-width: 280px !important;
+    transform: translateX(-100%);
+    transition: transform 0.3s var(--apple-ease);
+    box-shadow: var(--apple-shadow-lg);
+  }
+
+  .apple-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  /* Show close button on mobile */
+  .mobile-sidebar-close {
+    display: flex;
+  }
+
+  /* Hide resize handle on mobile */
+  .sidebar-resize-handle {
+    display: none;
+  }
+
+  /* Add padding top to accommodate close button */
+  .apple-sidebar .sidebar-section:first-child .sidebar-section-title {
+    padding-top: 56px;
+  }
+
+  /* Add padding for menu button space on main content */
+  .portfolio-hero {
+    padding-top: 60px;
+  }
+
+  .apple-header {
+    padding-top: 60px;
+  }
+}
