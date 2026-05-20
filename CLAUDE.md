@@ -63,7 +63,7 @@ export const photographer = {
   instagram: 'https://www.instagram.com/louis_ddg',
 }
 
-export type Category = 'concerts' | 'soirees' | 'nature' | 'streets' | 'portraits'
+export type Category = 'scene' | 'soirees' | 'streets' | 'portraits'
 
 export const projects: Project[] = [
   { slug: 'nom-dossier-supabase', title: 'Titre Affiché', category: 'scene', year: 2024, cover: 'photo-05.jpg' },
@@ -82,7 +82,7 @@ export const albums: Album[] = [
 1. Upload photos dans un dossier Supabase (`gallery-photos/mon-projet/`)
 2. Ajouter dans `portfolio-config.ts`:
    ```typescript
-   { slug: 'mon-projet', title: 'Mon Projet', category: 'concerts', year: 2024 }
+   { slug: 'mon-projet', title: 'Mon Projet', category: 'scene', cover: 'DSC_0001.jpg' }
    ```
 
 ### Ajouter un album public
