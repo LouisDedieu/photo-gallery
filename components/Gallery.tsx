@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import posthog from 'posthog-js'
 import JSZip from 'jszip'
 import Masonry from 'react-masonry-css'
 import { GalleryFile, TransferMetadata } from '@/lib/types'
@@ -156,6 +157,14 @@ export function Gallery({ metadata }: GalleryProps) {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
+
+      // Track ZIP download
+      posthog.capture('photo_downloaded', {
+        gallery_id: transferId,
+        gallery_name: albumName,
+        photo_count: selectedIds.size,
+        download_type: 'zip',
+      })
     } catch (error) {
       console.error('Download error:', error)
       alert('Echec du telechargement. Veuillez reessayer.')

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useCallback, useState } from 'react'
+import posthog from 'posthog-js'
 import { GalleryFile } from '@/lib/types'
 
 interface LightboxProps {
@@ -77,6 +78,13 @@ export function Lightbox({
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(objectUrl)
+
+    // Track download
+    posthog.capture('photo_downloaded', {
+      file_name: file.fileName,
+      file_uuid: file.uuid,
+      download_type: 'single',
+    })
   }
 
   return (
