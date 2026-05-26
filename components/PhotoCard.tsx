@@ -1,40 +1,68 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { GalleryFile } from '@/lib/types'
 
 interface PhotoCardProps {
   file: GalleryFile
+  index?: number
   isSelected: boolean
   onSelect?: (fileUuid: string) => void
   onClick: () => void
   useOriginalRatio?: boolean
   hideCheckbox?: boolean
+  isGalleryReady?: boolean
+  onImageLoaded?: () => void
+  shouldPreload?: boolean
 }
+
+// Stagger delay between each card reveal (in ms)
+const STAGGER_DELAY = 50
 
 export function PhotoCard({
   file,
+  index = 0,
   isSelected,
   onSelect,
   onClick,
   useOriginalRatio = true,
   hideCheckbox = false,
+  isGalleryReady = true,
+  onImageLoaded,
+  shouldPreload = false,
 }: PhotoCardProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [hasError, setHasError] = useState(false)
+  const hasReportedLoad = useRef(false)
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     onSelect?.(file.uuid)
   }
 
+  const handleImageLoad = () => {
+    setIsLoaded(true)
+    // Report to gallery only once per image
+    if (!hasReportedLoad.current && onImageLoaded) {
+      hasReportedLoad.current = true
+      onImageLoaded()
+    }
+  }
+
+  // Calculate stagger delay for reveal animation
+  const revealDelay = index * STAGGER_DELAY
+
+  // Show card content only when gallery is ready (for animated reveal)
+  const showContent = isGalleryReady && isLoaded
+
   return (
     <div
-      className={`photo-card ${isSelected ? 'selected' : ''}`}
+      className={`photo-card ${isSelected ? 'selected' : ''} ${showContent ? 'photo-card-revealed' : ''}`}
+      style={{ '--reveal-delay': `${revealDelay}ms` } as React.CSSProperties}
       onClick={onClick}
     >
-      {/* Loading skeleton */}
-      {!isLoaded && !hasError && (
+      {/* Loading skeleton - show until gallery is ready AND image is loaded */}
+      {!showContent && !hasError && (
         <div
           className="absolute inset-0 skeleton-shimmer"
           style={useOriginalRatio ? { minHeight: '150px' } : undefined}
@@ -53,15 +81,15 @@ export function PhotoCard({
         </div>
       )}
 
-      {/* Image - using thumbnail for faster loading */}
+      {/* Image - preload first batch eagerly, rest lazy */}
       {!hasError && (
         <img
           src={file.thumbnailUrl}
           alt={file.fileName}
-          className={`transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-          onLoad={() => setIsLoaded(true)}
+          className={`photo-card-image ${showContent ? 'photo-card-image-visible' : ''}`}
+          onLoad={handleImageLoad}
           onError={() => setHasError(true)}
-          loading="lazy"
+          loading={shouldPreload ? 'eager' : 'lazy'}
         />
       )}
 

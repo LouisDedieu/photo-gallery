@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import posthog from 'posthog-js'
 import JSZip from 'jszip'
 import Masonry from 'react-masonry-css'
@@ -19,6 +19,9 @@ interface GalleryProps {
 // Check if gallery is a portfolio project (no selection/download)
 const portfolioSlugs = new Set(projects.map(p => p.slug))
 const albumSlugs = new Set(albums.map(a => a.slug))
+
+// Number of images to preload before revealing gallery
+const PRELOAD_BATCH_SIZE = 6
 
 function getSessionId(): string {
   if (typeof window === 'undefined') return ''
@@ -39,7 +42,40 @@ export function Gallery({ metadata }: GalleryProps) {
   const [sessionId, setSessionId] = useState<string>('')
   const [useOriginalRatio, setUseOriginalRatio] = useState(true)
 
+  // Gallery reveal state - preload first batch before showing
+  const [isGalleryReady, setIsGalleryReady] = useState(false)
+  const loadedCountRef = useRef(0)
+  const preloadTargetRef = useRef(0)
+
   const { transferId, galleryId, files, expiresAt } = metadata
+
+  // Calculate preload target based on actual file count
+  useEffect(() => {
+    preloadTargetRef.current = Math.min(PRELOAD_BATCH_SIZE, files.length)
+    // If no files, mark as ready immediately
+    if (files.length === 0) {
+      setIsGalleryReady(true)
+      return
+    }
+
+    // Fallback timeout - reveal gallery after max wait time even if images aren't loaded
+    const timeoutId = setTimeout(() => {
+      if (!isGalleryReady) {
+        setIsGalleryReady(true)
+      }
+    }, 3000) // 3 second max wait
+
+    return () => clearTimeout(timeoutId)
+  }, [files.length, isGalleryReady])
+
+  // Callback when an image finishes loading
+  const handleImageLoaded = useCallback(() => {
+    loadedCountRef.current += 1
+    // Once enough images are loaded, reveal the gallery
+    if (!isGalleryReady && loadedCountRef.current >= preloadTargetRef.current) {
+      setIsGalleryReady(true)
+    }
+  }, [isGalleryReady])
 
   // Check gallery type - Portfolio has no selection, Albums and Client galleries have selection
   const isPortfolio = portfolioSlugs.has(transferId)
@@ -242,32 +278,40 @@ export function Gallery({ metadata }: GalleryProps) {
         {useOriginalRatio ? (
           <Masonry
             breakpointCols={{ default: 3, 900: 2, 600: 2 }}
-            className="masonry-grid"
+            className={`masonry-grid ${isGalleryReady ? 'gallery-ready' : ''}`}
             columnClassName="masonry-column"
           >
             {files.map((file, index) => (
               <PhotoCard
                 key={file.uuid}
                 file={file}
+                index={index}
                 isSelected={selectionEnabled && selectedIds.has(file.uuid)}
                 onSelect={selectionEnabled ? handleSelect : undefined}
                 onClick={() => openLightbox(index)}
                 useOriginalRatio={useOriginalRatio}
                 hideCheckbox={!selectionEnabled}
+                isGalleryReady={isGalleryReady}
+                onImageLoaded={handleImageLoaded}
+                shouldPreload={index < PRELOAD_BATCH_SIZE}
               />
             ))}
           </Masonry>
         ) : (
-          <div className="photo-grid">
+          <div className={`photo-grid ${isGalleryReady ? 'gallery-ready' : ''}`}>
             {files.map((file, index) => (
               <PhotoCard
                 key={file.uuid}
                 file={file}
+                index={index}
                 isSelected={selectionEnabled && selectedIds.has(file.uuid)}
                 onSelect={selectionEnabled ? handleSelect : undefined}
                 onClick={() => openLightbox(index)}
                 useOriginalRatio={useOriginalRatio}
                 hideCheckbox={!selectionEnabled}
+                isGalleryReady={isGalleryReady}
+                onImageLoaded={handleImageLoaded}
+                shouldPreload={index < PRELOAD_BATCH_SIZE}
               />
             ))}
           </div>

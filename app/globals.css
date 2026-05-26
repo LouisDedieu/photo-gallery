@@ -281,16 +281,11 @@ button, a, [role="button"] {
   box-shadow: inset 0 0 0 1px var(--apple-border);
 }
 
-.photo-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 8px;
-  transition: transform 0.3s var(--apple-ease);
-}
-
-.photo-card:hover img {
+/* Base img styles moved to .photo-card-image class in reveal system */
+/* Hover effect applied after reveal animation completes */
+.photo-card-revealed:hover .photo-card-image-visible {
   transform: scale(1.02);
+  transition: transform 0.3s var(--apple-ease);
 }
 
 /* Masonry grid layout (react-masonry-css) */
@@ -314,7 +309,7 @@ button, a, [role="button"] {
   margin-bottom: 8px;
 }
 
-.masonry-column .photo-card img {
+.masonry-column .photo-card .photo-card-image {
   width: 100%;
   height: auto;
   object-fit: cover;
@@ -563,6 +558,43 @@ button, a, [role="button"] {
   background: linear-gradient(90deg, var(--apple-bg-secondary) 25%, var(--apple-bg) 50%, var(--apple-bg-secondary) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+/* ========================================
+   Gallery Reveal Animation System
+   ======================================== */
+
+/* Photo card reveal animation */
+@keyframes photoReveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Photo card image - hidden until reveal */
+.photo-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  opacity: 0;
+  transform: translateY(20px) scale(0.96);
+}
+
+/* Revealed state - animate with staggered delay */
+.photo-card-revealed .photo-card-image-visible {
+  animation: photoReveal 0.5s var(--apple-ease) forwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+/* Gallery ready state - can add container-level effects here */
+.gallery-ready {
+  /* Container is ready for reveal animations */
 }
 
 /* ========================================
