@@ -3,9 +3,12 @@
 import { useEffect, useCallback, useState } from 'react'
 import posthog from 'posthog-js'
 import { GalleryFile } from '@/lib/types'
+import { track } from '@/lib/analytics'
 
 interface LightboxProps {
   file: GalleryFile
+  galleryId: string
+  photoIndex: number
   isSelected: boolean
   onSelect?: (fileUuid: string) => void
   onClose: () => void
@@ -18,6 +21,8 @@ interface LightboxProps {
 
 export function Lightbox({
   file,
+  galleryId,
+  photoIndex,
   isSelected,
   onSelect,
   onClose,
@@ -29,6 +34,28 @@ export function Lightbox({
 }: LightboxProps) {
   const [isLoading, setIsLoading] = useState(true)
 
+  const handlePrev = useCallback(() => {
+    if (hasPrev) {
+      track.lightboxNavigated({
+        gallery_id: galleryId,
+        direction: 'prev',
+        photo_index: photoIndex - 1,
+      })
+      onPrev()
+    }
+  }, [hasPrev, galleryId, photoIndex, onPrev])
+
+  const handleNext = useCallback(() => {
+    if (hasNext) {
+      track.lightboxNavigated({
+        gallery_id: galleryId,
+        direction: 'next',
+        photo_index: photoIndex + 1,
+      })
+      onNext()
+    }
+  }, [hasNext, galleryId, photoIndex, onNext])
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       switch (e.key) {
@@ -36,10 +63,10 @@ export function Lightbox({
           onClose()
           break
         case 'ArrowLeft':
-          if (hasPrev) onPrev()
+          handlePrev()
           break
         case 'ArrowRight':
-          if (hasNext) onNext()
+          handleNext()
           break
         case ' ':
           if (!hideSelection && onSelect) {
@@ -49,7 +76,7 @@ export function Lightbox({
           break
       }
     },
-    [onClose, onPrev, onNext, onSelect, hasPrev, hasNext, file.uuid, hideSelection]
+    [onClose, handlePrev, handleNext, onSelect, file.uuid, hideSelection]
   )
 
   useEffect(() => {
@@ -103,7 +130,7 @@ export function Lightbox({
       {/* Navigation - Previous */}
       {hasPrev && (
         <button
-          onClick={onPrev}
+          onClick={handlePrev}
           className="lightbox-button absolute left-5 top-1/2 -translate-y-1/2 z-10"
           aria-label="Photo precedente"
         >
@@ -116,7 +143,7 @@ export function Lightbox({
       {/* Navigation - Next */}
       {hasNext && (
         <button
-          onClick={onNext}
+          onClick={handleNext}
           className="lightbox-button absolute right-5 top-1/2 -translate-y-1/2 z-10"
           aria-label="Photo suivante"
         >

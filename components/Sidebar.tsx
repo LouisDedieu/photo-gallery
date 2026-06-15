@@ -4,6 +4,7 @@ import { useRef, useEffect, useCallback, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { projects, categories, categoryLabels, albums, type Category } from '@/lib/portfolio-config'
+import { track } from '@/lib/analytics'
 
 // Icons
 function HomeIcon({ className }: { className?: string }) {
@@ -160,6 +161,7 @@ export function Sidebar({ currentGalleryName, currentGallerySlug, isDarkMode, on
 
   const handleCategoryClick = (e: React.MouseEvent, category: Category) => {
     e.preventDefault()
+    track.navCategoryClicked({ category })
 
     if (isHome && onScrollToSection) {
       // On home page - smooth scroll to section
@@ -170,6 +172,22 @@ export function Sidebar({ currentGalleryName, currentGallerySlug, isDarkMode, on
       // On another page - navigate to home with hash
       router.push(`/#${category}`)
     }
+  }
+
+  const handleHomeClick = () => {
+    track.navHomeClicked()
+  }
+
+  const handleAlbumClick = (album: typeof albums[0]) => {
+    track.navAlbumClicked({
+      album_slug: album.slug,
+      album_title: album.title,
+    })
+  }
+
+  const handleDarkModeToggle = () => {
+    track.darkModeToggled({ enabled: !isDarkMode })
+    onToggleDarkMode()
   }
 
   return (
@@ -194,6 +212,7 @@ export function Sidebar({ currentGalleryName, currentGallerySlug, isDarkMode, on
             <div className="sidebar-section-title">Navigation</div>
             <Link
               href="/"
+              onClick={handleHomeClick}
               className={`sidebar-item ${isHome ? 'active' : ''}`}
             >
               <HomeIcon className="sidebar-icon" />
@@ -225,6 +244,7 @@ export function Sidebar({ currentGalleryName, currentGallerySlug, isDarkMode, on
                 <Link
                   key={album.slug}
                   href={`/gallery/${album.slug}`}
+                  onClick={() => handleAlbumClick(album)}
                   className={`sidebar-item ${currentGallerySlug === album.slug ? 'active' : ''}`}
                 >
                   <AlbumIcon className="sidebar-icon" />
@@ -258,7 +278,7 @@ export function Sidebar({ currentGalleryName, currentGallerySlug, isDarkMode, on
             <span>Instagram</span>
           </a>
           <button
-            onClick={onToggleDarkMode}
+            onClick={handleDarkModeToggle}
             className="sidebar-item w-full"
           >
             {isDarkMode ? (

@@ -4,6 +4,7 @@ import { useRef, useCallback, forwardRef, useImperativeHandle } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { ProjectWithCover } from '@/lib/gallery'
+import { track } from '@/lib/analytics'
 
 interface ProjectCardProps {
   project: ProjectWithCover
@@ -65,6 +66,14 @@ export const ProjectCard = forwardRef<HTMLAnchorElement, ProjectCardProps>(
     }
   }, [])
 
+  const handleClick = useCallback(() => {
+    track.projectClicked({
+      project_slug: project.slug,
+      project_title: project.title,
+      category: project.category,
+    })
+  }, [project.slug, project.title, project.category])
+
   return (
     <Link
       ref={cardRef}
@@ -72,6 +81,7 @@ export const ProjectCard = forwardRef<HTMLAnchorElement, ProjectCardProps>(
       data-slug={project.slug}
       className={`project-card project-card-3d project-card-parallax card-reveal ${isRevealed ? 'revealed' : ''}`}
       style={{ animationDelay: `${animationDelay}s` }}
+      onClick={handleClick}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >

@@ -6,6 +6,7 @@ import JSZip from 'jszip'
 import Masonry from 'react-masonry-css'
 import { GalleryFile, TransferMetadata } from '@/lib/types'
 import { projects, albums } from '@/lib/portfolio-config'
+import { getSessionId, setGalleryContext, track } from '@/lib/analytics'
 import { PhotoCard } from './PhotoCard'
 import { Lightbox } from './Lightbox'
 import { SelectionBar } from './SelectionBar'
@@ -23,17 +24,6 @@ const albumSlugs = new Set(albums.map(a => a.slug))
 // Number of images to preload before revealing gallery
 const PRELOAD_BATCH_SIZE = 6
 
-function getSessionId(): string {
-  if (typeof window === 'undefined') return ''
-
-  let sessionId = localStorage.getItem('gallery_session_id')
-  if (!sessionId) {
-    sessionId = crypto.randomUUID()
-    localStorage.setItem('gallery_session_id', sessionId)
-  }
-  return sessionId
-}
-
 export function Gallery({ metadata }: GalleryProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -46,6 +36,10 @@ export function Gallery({ metadata }: GalleryProps) {
   const [isGalleryReady, setIsGalleryReady] = useState(false)
   const loadedCountRef = useRef(0)
   const preloadTargetRef = useRef(0)
+
+  // Lightbox tracking refs
+  const lightboxOpenTimeRef = useRef<number | null>(null)
+  const photosViewedInLightboxRef = useRef<Set<number>>(new Set())
 
   const { transferId, galleryId, files, expiresAt } = metadata
 
@@ -84,6 +78,24 @@ export function Gallery({ metadata }: GalleryProps) {
 
   // Generate album name from transferId
   const albumName = metadata.message || `Album ${transferId.slice(0, 8)}`
+
+  // Determine gallery type for tracking
+  const galleryType: 'portfolio' | 'album' | 'client' = isPortfolio
+    ? 'portfolio'
+    : isAlbum
+      ? 'album'
+      : 'client'
+
+  // Track gallery view on mount
+  useEffect(() => {
+    setGalleryContext(transferId, albumName, galleryType, files.length)
+    track.galleryViewed({
+      gallery_id: transferId,
+      gallery_name: albumName,
+      gallery_type: galleryType,
+      photo_count: files.length,
+    })
+  }, [transferId, albumName, galleryType, files.length])
 
   // Create a map for quick file lookup
   const fileMap = new Map(files.map((f) => [f.uuid, f]))
@@ -132,28 +144,52 @@ export function Gallery({ metadata }: GalleryProps) {
     (fileUuid: string) => {
       setSelectedIds((prev) => {
         const newSet = new Set(prev)
-        if (newSet.has(fileUuid)) {
+        const wasSelected = newSet.has(fileUuid)
+
+        if (wasSelected) {
           newSet.delete(fileUuid)
+          track.photoDeselected({
+            gallery_id: transferId,
+            photo_uuid: fileUuid,
+            selection_count: newSet.size,
+          })
         } else {
           newSet.add(fileUuid)
+          track.photoSelected({
+            gallery_id: transferId,
+            photo_uuid: fileUuid,
+            selection_count: newSet.size,
+          })
         }
         saveSelection(newSet)
         return newSet
       })
     },
-    [saveSelection]
+    [saveSelection, transferId]
   )
 
   const handleClearSelection = useCallback(() => {
-    setSelectedIds(new Set())
+    setSelectedIds((prev) => {
+      if (prev.size > 0) {
+        track.selectionCleared({
+          gallery_id: transferId,
+          cleared_count: prev.size,
+        })
+      }
+      return new Set()
+    })
     saveSelection(new Set())
-  }, [saveSelection])
+  }, [saveSelection, transferId])
 
   const handleSelectAll = useCallback(() => {
     const allIds = new Set(files.map((f) => f.uuid))
     setSelectedIds(allIds)
     saveSelection(allIds)
-  }, [files, saveSelection])
+    track.selectionAll({
+      gallery_id: transferId,
+      selected_count: allIds.size,
+    })
+  }, [files, saveSelection, transferId])
 
   const handleDownload = async () => {
     if (selectedIds.size === 0) return
@@ -210,18 +246,44 @@ export function Gallery({ metadata }: GalleryProps) {
     }
   }
 
-  const openLightbox = (index: number) => setLightboxIndex(index)
-  const closeLightbox = () => setLightboxIndex(null)
+  const openLightbox = (index: number) => {
+    lightboxOpenTimeRef.current = Date.now()
+    photosViewedInLightboxRef.current = new Set([index])
+    track.lightboxOpened({
+      gallery_id: transferId,
+      photo_index: index,
+      photo_uuid: files[index]?.uuid || '',
+    })
+    setLightboxIndex(index)
+  }
+
+  const closeLightbox = () => {
+    if (lightboxOpenTimeRef.current !== null) {
+      const timeSpent = Math.round((Date.now() - lightboxOpenTimeRef.current) / 1000)
+      track.lightboxClosed({
+        gallery_id: transferId,
+        photos_viewed: photosViewedInLightboxRef.current.size,
+        time_spent_seconds: timeSpent,
+      })
+      lightboxOpenTimeRef.current = null
+      photosViewedInLightboxRef.current = new Set()
+    }
+    setLightboxIndex(null)
+  }
 
   const goToPrev = () => {
     if (lightboxIndex !== null && lightboxIndex > 0) {
-      setLightboxIndex(lightboxIndex - 1)
+      const newIndex = lightboxIndex - 1
+      photosViewedInLightboxRef.current.add(newIndex)
+      setLightboxIndex(newIndex)
     }
   }
 
   const goToNext = () => {
     if (lightboxIndex !== null && lightboxIndex < files.length - 1) {
-      setLightboxIndex(lightboxIndex + 1)
+      const newIndex = lightboxIndex + 1
+      photosViewedInLightboxRef.current.add(newIndex)
+      setLightboxIndex(newIndex)
     }
   }
 
@@ -244,7 +306,14 @@ export function Gallery({ metadata }: GalleryProps) {
           <div className="header-actions">
             {/* Toggle view mode */}
             <button
-              onClick={() => setUseOriginalRatio(!useOriginalRatio)}
+              onClick={() => {
+                const newMode = !useOriginalRatio
+                setUseOriginalRatio(newMode)
+                track.viewModeChanged({
+                  gallery_id: transferId,
+                  mode: newMode ? 'masonry' : 'square',
+                })
+              }}
               className="toggle-button"
               title={useOriginalRatio ? 'Afficher en carres' : 'Ratio original'}
             >
@@ -338,6 +407,8 @@ export function Gallery({ metadata }: GalleryProps) {
       {currentFile && (
         <Lightbox
           file={currentFile}
+          galleryId={transferId}
+          photoIndex={lightboxIndex!}
           isSelected={selectionEnabled && selectedIds.has(currentFile.uuid)}
           onSelect={selectionEnabled ? handleSelect : undefined}
           onClose={closeLightbox}
