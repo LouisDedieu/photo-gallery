@@ -1,28 +1,28 @@
-import { getSupabase } from './supabase'
+import { executeQuery } from './cloudflare/d1'
 
 interface SelectionRow {
   id: string
   gallery_id: string
   session_id: string
-  photo_ids: string[]
+  photo_ids: string // JSON string in D1
   updated_at: string
 }
 
 export async function getSelection(galleryId: string, sessionId: string): Promise<string[]> {
-  const supabase = getSupabase()
+  const results = await executeQuery<Pick<SelectionRow, 'photo_ids'>>(
+    'SELECT photo_ids FROM selections WHERE gallery_id = ? AND session_id = ?',
+    [galleryId, sessionId]
+  )
 
-  const { data, error } = await supabase
-    .from('selections')
-    .select('photo_ids')
-    .eq('gallery_id', galleryId)
-    .eq('session_id', sessionId)
-    .single<Pick<SelectionRow, 'photo_ids'>>()
-
-  if (error || !data) {
+  if (results.length === 0) {
     return []
   }
 
-  return data.photo_ids || []
+  try {
+    return JSON.parse(results[0].photo_ids) as string[]
+  } catch {
+    return []
+  }
 }
 
 export async function setSelection(
@@ -30,25 +30,16 @@ export async function setSelection(
   sessionId: string,
   photoIds: string[]
 ): Promise<void> {
-  const supabase = getSupabase()
+  const photoIdsJson = JSON.stringify(photoIds)
+  const now = new Date().toISOString()
 
-  const { error } = await supabase
-    .from('selections')
-    .upsert(
-      {
-        gallery_id: galleryId,
-        session_id: sessionId,
-        photo_ids: photoIds,
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: 'gallery_id,session_id',
-      }
-    )
-
-  if (error) {
-    throw new Error('Failed to save selection')
-  }
+  await executeQuery(
+    `INSERT INTO selections (gallery_id, session_id, photo_ids, updated_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(gallery_id, session_id)
+     DO UPDATE SET photo_ids = ?, updated_at = ?`,
+    [galleryId, sessionId, photoIdsJson, now, photoIdsJson, now]
+  )
 }
 
 export async function addToSelection(
@@ -78,15 +69,8 @@ export async function removeFromSelection(
 }
 
 export async function clearSelection(galleryId: string, sessionId: string): Promise<void> {
-  const supabase = getSupabase()
-
-  const { error } = await supabase
-    .from('selections')
-    .delete()
-    .eq('gallery_id', galleryId)
-    .eq('session_id', sessionId)
-
-  if (error) {
-    throw new Error('Failed to clear selection')
-  }
+  await executeQuery(
+    'DELETE FROM selections WHERE gallery_id = ? AND session_id = ?',
+    [galleryId, sessionId]
+  )
 }

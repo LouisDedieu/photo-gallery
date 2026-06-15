@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
+import Image from 'next/image'
 import { GalleryFile } from '@/lib/types'
 
 interface PhotoCardProps {
@@ -81,15 +82,19 @@ export function PhotoCard({
         </div>
       )}
 
-      {/* Image - preload first batch eagerly, rest lazy */}
+      {/* Image - using Next.js Image for automatic optimization */}
       {!hasError && (
-        <img
+        <Image
           src={file.thumbnailUrl}
           alt={file.fileName}
+          width={400}
+          height={300}
           className={`photo-card-image ${showContent ? 'photo-card-image-visible' : ''}`}
           onLoad={handleImageLoad}
           onError={() => setHasError(true)}
           loading={shouldPreload ? 'eager' : 'lazy'}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          style={{ width: '100%', height: 'auto' }}
         />
       )}
 

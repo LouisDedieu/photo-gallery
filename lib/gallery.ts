@@ -1,4 +1,4 @@
-import { getSupabase, STORAGE_BUCKET, getThumbnailUrl } from './supabase'
+import { listFiles, getPublicUrl } from './cloudflare/r2'
 import { TransferMetadata, GalleryFile } from './types'
 import { projects, type Project } from './portfolio-config'
 
@@ -6,9 +6,14 @@ export interface ProjectWithCover extends Project {
   coverUrl: string | null
 }
 
-export async function getProjectsWithCovers(): Promise<ProjectWithCover[]> {
-  const supabase = getSupabase()
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic']
 
+function isImageFile(fileName: string): boolean {
+  const ext = fileName.toLowerCase().split('.').pop()
+  return IMAGE_EXTENSIONS.includes(ext || '')
+}
+
+export async function getProjectsWithCovers(): Promise<ProjectWithCover[]> {
   const projectsWithCovers = await Promise.all(
     projects.map(async (project) => {
       try {
@@ -17,30 +22,19 @@ export async function getProjectsWithCovers(): Promise<ProjectWithCover[]> {
           const storagePath = `${project.slug}/${project.cover}`
           return {
             ...project,
-            coverUrl: getThumbnailUrl(storagePath, 1200, 90),
+            coverUrl: getPublicUrl(storagePath),
           }
         }
 
         // Sinon, prendre la première image du dossier
-        const { data: files } = await supabase.storage
-          .from(STORAGE_BUCKET)
-          .list(project.slug, {
-            limit: 10,
-            sortBy: { column: 'name', order: 'asc' },
-          })
+        const files = await listFiles(project.slug)
 
-        if (files && files.length > 0) {
-          const firstImage = files.find((file) => {
-            const ext = file.name.toLowerCase().split('.').pop()
-            return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')
-          })
+        const firstImage = files.find((file) => isImageFile(file.name))
 
-          if (firstImage) {
-            const storagePath = `${project.slug}/${firstImage.name}`
-            return {
-              ...project,
-              coverUrl: getThumbnailUrl(storagePath, 1200, 90),
-            }
+        if (firstImage) {
+          return {
+            ...project,
+            coverUrl: getPublicUrl(firstImage.key),
           }
         }
 
@@ -55,41 +49,30 @@ export async function getProjectsWithCovers(): Promise<ProjectWithCover[]> {
 }
 
 export async function getGalleryBySlug(slug: string): Promise<TransferMetadata> {
-  const supabase = getSupabase()
+  const files = await listFiles(slug)
 
-  // List all files in the folder
-  const { data: files, error } = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .list(slug, {
-      sortBy: { column: 'name', order: 'asc' },
-    })
-
-  if (error) {
-    throw new Error('Gallery not found')
-  }
-
-  if (!files || files.length === 0) {
+  if (files.length === 0) {
     throw new Error('Gallery not found or empty')
   }
 
   // Filter only image files
-  const imageFiles = files.filter((file) => {
-    const ext = file.name.toLowerCase().split('.').pop()
-    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].includes(ext || '')
-  })
+  const imageFiles = files.filter((file) => isImageFile(file.name))
 
-  // Build gallery files with public URLs and thumbnail URLs
+  if (imageFiles.length === 0) {
+    throw new Error('Gallery not found or empty')
+  }
+
+  // Build gallery files with public URLs
   const galleryFiles: GalleryFile[] = imageFiles.map((file) => {
-    const storagePath = `${slug}/${file.name}`
-    const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath)
+    const publicUrl = getPublicUrl(file.key)
 
     return {
-      uuid: file.id || file.name,
+      uuid: file.key,
       fileName: file.name,
-      fileSize: file.metadata?.size || 0,
-      mimeType: file.metadata?.mimetype || 'image/jpeg',
-      url: data.publicUrl,
-      thumbnailUrl: getThumbnailUrl(storagePath),
+      fileSize: file.size,
+      mimeType: getMimeType(file.name),
+      url: publicUrl,
+      thumbnailUrl: publicUrl, // Next.js Image handles optimization
     }
   })
 
@@ -100,4 +83,17 @@ export async function getGalleryBySlug(slug: string): Promise<TransferMetadata> 
     createdAt: new Date().toISOString(),
     files: galleryFiles,
   }
+}
+
+function getMimeType(fileName: string): string {
+  const ext = fileName.toLowerCase().split('.').pop()
+  const mimeTypes: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    heic: 'image/heic',
+  }
+  return mimeTypes[ext || ''] || 'image/jpeg'
 }
