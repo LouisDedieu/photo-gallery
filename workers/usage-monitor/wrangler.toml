@@ -1,0 +1,15 @@
+name = "usage-monitor"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[triggers]
+crons = ["0 9 * * *"]  # Tous les jours à 9h UTC
+
+[vars]
+R2_BUCKET_NAME = "gallery-photos"
+D1_DATABASE_ID = "c49d0732-0182-4481-b884-d5b27c6971ee"
+ALERT_THRESHOLD = "80"  # Pourcentage de seuil d'alerte
+
+# Secrets à configurer via: wrangler secret put <NAME>
+# - CF_API_TOKEN: Token Cloudflare avec permissions Account Analytics + R2 + D1 Read
+# - DISCORD_WEBHOOK_URL: URL du webhook Discord pour les alertes
