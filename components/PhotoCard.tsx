@@ -94,7 +94,7 @@ export function PhotoCard({
           onError={() => setHasError(true)}
           loading={shouldPreload ? 'eager' : 'lazy'}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          style={{ width: '100%', height: 'auto' }}
+          style={{ width: '100%' }}
         />
       )}
 

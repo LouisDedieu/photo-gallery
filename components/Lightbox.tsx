@@ -173,11 +173,6 @@ export function Lightbox({
 
       {/* Bottom toolbar */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/70 backdrop-blur-xl rounded-full px-5 py-3">
-        {/* Filename */}
-        <span className="text-white/80 text-sm font-medium max-w-[200px] truncate">
-          {file.fileName}
-        </span>
-
         {/* Selection and download buttons (hidden for portfolio) */}
         {!hideSelection && (
           <>
