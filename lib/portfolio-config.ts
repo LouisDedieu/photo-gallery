@@ -54,6 +54,7 @@ export const projects: Project[] = [
   // STREETS
   { slug: 'antibes', title: 'Antibes', category: 'streets', cover: 'DSCF0740.jpg' },
   { slug: 'espagne', title: 'Espagne', category: 'streets' },
+  { slug: 'maroc', title: 'Maroc Trip', category: 'streets' }
 ]
 
 export const albums: Album[] = [
