@@ -61,5 +61,4 @@ export const albums: Album[] = [
   // Albums publics - photos d'événements téléchargeables par le public
   // Exemple:
   // { slug: 'soiree-2024-03-15', title: 'Soirée du 15 mars', date: '2024-03-15' },
-  { slug: 'album-koy-2026-05-07', title: 'Soirée du 7 mai (Koy Club Reggaeton)', date: '2026-05-07' },
 ]
