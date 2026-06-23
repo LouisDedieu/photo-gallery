@@ -1,6 +1,6 @@
 import { listFiles, getPublicUrl } from './cloudflare/r2'
 import { TransferMetadata, GalleryFile } from './types'
-import { projects, type Project } from './portfolio-config'
+import { projects, albums, type Project } from './portfolio-config'
 
 export interface ProjectWithCover extends Project {
   coverUrl: string | null
@@ -76,9 +76,14 @@ export async function getGalleryBySlug(slug: string): Promise<TransferMetadata> 
     }
   })
 
+  const project = projects.find(p => p.slug === slug)
+  const album = albums.find(a => a.slug === slug)
+  const title = project?.title || album?.title || undefined
+
   return {
     transferId: slug,
     galleryId: slug,
+    title,
     expiresAt: '',
     createdAt: new Date().toISOString(),
     files: galleryFiles,

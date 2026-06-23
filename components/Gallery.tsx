@@ -12,6 +12,7 @@ import { Lightbox } from './Lightbox'
 import { SelectionBar } from './SelectionBar'
 import { ExpirationBanner } from './ExpirationBanner'
 import { AppShell } from './AppShell'
+import Link from 'next/link'
 
 interface GalleryProps {
   metadata: TransferMetadata
@@ -77,7 +78,7 @@ export function Gallery({ metadata }: GalleryProps) {
   const selectionEnabled = !isPortfolio // Albums et clients ont la sélection
 
   // Generate album name from transferId
-  const albumName = metadata.message || `Album ${transferId.slice(0, 8)}`
+  const albumName = metadata.title || metadata.message || `Album ${transferId.slice(0, 8)}`
 
   // Determine gallery type for tracking
   const galleryType: 'portfolio' | 'album' | 'client' = isPortfolio
@@ -296,11 +297,18 @@ export function Gallery({ metadata }: GalleryProps) {
       <AppShell currentGalleryName={albumName} currentGallerySlug={transferId}>
         {/* Header */}
         <header className="apple-header">
-          <div>
-            <h1 className="apple-header-title">{albumName}</h1>
-            <p className="apple-header-subtitle">
-              {files.length} photo{files.length > 1 ? 's' : ''}
-            </p>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="back-button" title="Retour a l'accueil">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+            </Link>
+            <div className="w-fit">
+              <h1 className="apple-header-title">{albumName}</h1>
+              <p className="apple-header-subtitle">
+                {files.length} photo{files.length > 1 ? 's' : ''}
+              </p>
+            </div>
           </div>
 
           <div className="header-actions">

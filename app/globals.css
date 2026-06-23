@@ -529,6 +529,23 @@ button, a, [role="button"] {
   color: var(--apple-text-primary);
 }
 
+.back-button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--apple-text-secondary);
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.back-button:hover {
+  background: var(--item-hover);
+  color: var(--apple-text-primary);
+}
+
 /* Skeleton loading animations */
 @keyframes shimmer {
   0% { background-position: 200% 0; }

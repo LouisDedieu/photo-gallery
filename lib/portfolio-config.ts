@@ -46,8 +46,8 @@ export const projects: Project[] = [
   { slug: 'challenge-soiree', title: 'Challenge Valence 2026', category: 'soirees', cover: 'DSCF6742.JPG' },
   { slug: 'soirees-koy-comptoir', title: 'Koy Club au Comptoir Général', category: 'soirees', cover: 'DSCF3657.jpg' },
   // SCENE
-  { slug: 'challenge-concert', title: 'Concert Since Metal', category: 'scene', cover: 'DSCF5843.jpg' },
-  { slug: 'challenge-danse', title: 'Danse Challenge Valence', category: 'scene', cover: 'DSCF6410.jpg' },
+  { slug: 'challenge-concert', title: 'Concert Since Metal', category: 'scene', cover: 'DSCF5762 1.jpg' },
+  { slug: 'challenge-danse', title: 'Danse Challenge Valence', category: 'scene', cover: 'DSCF6508.jpg' },
   { slug: 'challenge-dj', title: 'Krykor Live', category: 'scene', cover: 'DSCF6020.jpg' },
   // PORTRAITS
   { slug: 'shooting-romans', title: 'B&W Shooting', category: 'portraits', cover: 'DSCF2490.jpg' },

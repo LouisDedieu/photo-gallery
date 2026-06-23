@@ -13,6 +13,7 @@ export interface TransferMetadata {
   expiresAt: string
   createdAt: string
   files: GalleryFile[]
+  title?: string
   message?: string
 }
 
