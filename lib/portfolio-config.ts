@@ -15,7 +15,7 @@ export interface Album {
 export type Category =
   | 'scene'
   | 'soirees'
-  // | 'nature'
+  | 'nature'
   | 'streets'
   | 'portraits'
 
@@ -29,7 +29,7 @@ export const categories: Category[] = [
   'scene',
   'soirees',
   'portraits',
-  // 'nature',
+  'nature',
   'streets',
 ]
 
@@ -37,7 +37,7 @@ export const categoryLabels: Record<Category, string> = {
   scene: 'Scène',
   soirees: 'Soirées',
   portraits: 'Portraits',
-  // nature: 'Nature',
+  nature: 'Nature',
   streets: 'Streets',
 }
 
@@ -54,7 +54,9 @@ export const projects: Project[] = [
   // STREETS
   { slug: 'antibes', title: 'Antibes', category: 'streets', cover: 'DSCF0740.jpg' },
   { slug: 'espagne', title: 'Espagne', category: 'streets' },
-  { slug: 'maroc', title: 'Maroc Trip', category: 'streets' }
+  { slug: 'maroc', title: 'Maroc Trip', category: 'streets' },
+  // NATURE
+  { slug: 'nature-drome', title: 'Drôme', category: 'nature' },
 ]
 
 export const albums: Album[] = [
