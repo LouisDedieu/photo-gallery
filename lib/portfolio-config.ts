@@ -29,16 +29,16 @@ export const categories: Category[] = [
   'scene',
   'soirees',
   'portraits',
-  'nature',
   'streets',
+  'nature',
 ]
 
 export const categoryLabels: Record<Category, string> = {
   scene: 'Scène',
   soirees: 'Soirées',
   portraits: 'Portraits',
-  nature: 'Nature',
   streets: 'Streets',
+  nature: 'Nature',
 }
 
 export const projects: Project[] = [
