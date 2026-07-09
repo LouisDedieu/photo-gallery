@@ -4,6 +4,8 @@ import { useEffect, useCallback, useState } from 'react'
 import posthog from 'posthog-js'
 import { GalleryFile } from '@/lib/types'
 import { track } from '@/lib/analytics'
+import { canShareFiles, fetchAsFile, downloadBlobFile, shareFiles, isMobileDevice } from '@/lib/download'
+import { Toast } from './Toast'
 
 interface LightboxProps {
   file: GalleryFile
@@ -93,25 +95,44 @@ export function Lightbox({
     setIsLoading(true)
   }, [file.uuid])
 
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+
   const handleDownload = async () => {
-    const response = await fetch(file.url)
-    const blob = await response.blob()
-    const objectUrl = URL.createObjectURL(blob)
+    if (isDownloading) return
+    setIsDownloading(true)
 
-    const a = document.createElement('a')
-    a.href = objectUrl
-    a.download = file.fileName
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(objectUrl)
+    try {
+      const shareable = await fetchAsFile(file.url, file.fileName, file.mimeType)
 
-    // Track download
-    posthog.capture('photo_downloaded', {
-      file_name: file.fileName,
-      file_uuid: file.uuid,
-      download_type: 'single',
-    })
+      // Mobile uniquement : partage natif → enregistrement dans Photos/Galerie.
+      // Sur desktop on garde le téléchargement fichier direct.
+      if (isMobileDevice() && canShareFiles([shareable])) {
+        const result = await shareFiles([shareable])
+        if (result === 'shared') {
+          setToastMessage('Photo enregistrée')
+          posthog.capture('photo_downloaded', {
+            file_name: file.fileName,
+            file_uuid: file.uuid,
+            download_type: 'native-share',
+          })
+        }
+        // 'cancelled' → rien à faire. 'unsupported'/'error' → fallback ci-dessous.
+        if (result === 'shared' || result === 'cancelled') return
+      }
+
+      // Fallback desktop / non supporté : téléchargement fichier direct
+      downloadBlobFile(shareable, file.fileName)
+      posthog.capture('photo_downloaded', {
+        file_name: file.fileName,
+        file_uuid: file.uuid,
+        download_type: 'single',
+      })
+    } catch (error) {
+      console.error('Download error:', error)
+    } finally {
+      setIsDownloading(false)
+    }
   }
 
   return (
@@ -207,16 +228,29 @@ export function Lightbox({
             {/* Download button */}
             <button
               onClick={handleDownload}
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-medium hover:bg-white/10 transition-colors"
+              disabled={isDownloading}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-white text-sm font-medium hover:bg-white/10 transition-colors disabled:opacity-60"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
+              {isDownloading ? (
+                <div
+                  className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                  style={{ animation: 'spin 0.8s linear infinite' }}
+                />
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              )}
               Telecharger
             </button>
           </>
         )}
       </div>
+
+      {/* Confirmation flottante */}
+      {toastMessage && (
+        <Toast message={toastMessage} onDone={() => setToastMessage(null)} />
+      )}
 
       <style jsx>{`
         @keyframes spin {

@@ -6,6 +6,9 @@ interface SelectionBarProps {
   onClearSelection: () => void
   isDownloading: boolean
   downloadProgress: { current: number; total: number }
+  // Fallback iOS : photos prêtes, en attente d'un 2e tap pour le partage natif
+  hasPendingShare?: boolean
+  onSaveToGallery?: () => void
 }
 
 export function SelectionBar({
@@ -14,6 +17,8 @@ export function SelectionBar({
   onClearSelection,
   isDownloading,
   downloadProgress,
+  hasPendingShare = false,
+  onSaveToGallery,
 }: SelectionBarProps) {
   if (selectedCount === 0) {
     return null
@@ -44,30 +49,43 @@ export function SelectionBar({
         Annuler
       </button>
 
-      {/* Download button */}
-      <button
-        onClick={onDownload}
-        disabled={isDownloading}
-        className="primary"
-        style={{ minWidth: '160px' }}
-      >
-        {isDownloading ? (
-          <>
-            <div
-              className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-              style={{ animation: 'spin 0.8s linear infinite' }}
-            />
-            <span>{downloadProgress.current}/{downloadProgress.total}</span>
-          </>
-        ) : (
-          <>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Telecharger
-          </>
-        )}
-      </button>
+      {/* Download button — bascule vers "Enregistrer dans la galerie" (fallback iOS) */}
+      {hasPendingShare ? (
+        <button
+          onClick={onSaveToGallery}
+          className="primary"
+          style={{ minWidth: '200px' }}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          Enregistrer dans la galerie
+        </button>
+      ) : (
+        <button
+          onClick={onDownload}
+          disabled={isDownloading}
+          className="primary"
+          style={{ minWidth: '160px' }}
+        >
+          {isDownloading ? (
+            <>
+              <div
+                className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                style={{ animation: 'spin 0.8s linear infinite' }}
+              />
+              <span>{downloadProgress.current}/{downloadProgress.total}</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Telecharger
+            </>
+          )}
+        </button>
+      )}
 
       <style jsx>{`
         @keyframes spin {

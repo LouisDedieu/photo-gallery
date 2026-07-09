@@ -7,9 +7,11 @@ import Masonry from 'react-masonry-css'
 import { GalleryFile, TransferMetadata } from '@/lib/types'
 import { projects, albums } from '@/lib/portfolio-config'
 import { getSessionId, setGalleryContext, track } from '@/lib/analytics'
+import { canShareFiles, fetchAsFile, shareFiles, isMobileDevice } from '@/lib/download'
 import { PhotoCard } from './PhotoCard'
 import { Lightbox } from './Lightbox'
 import { SelectionBar } from './SelectionBar'
+import { Toast } from './Toast'
 import { ExpirationBanner } from './ExpirationBanner'
 import { AppShell } from './AppShell'
 import Link from 'next/link'
@@ -30,6 +32,10 @@ export function Gallery({ metadata }: GalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 })
+  // Fichiers préparés en attente de partage (fallback iOS : geste utilisateur perdu)
+  const [pendingShareFiles, setPendingShareFiles] = useState<File[] | null>(null)
+  // Message de confirmation flottant
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string>('')
   const [useOriginalRatio, setUseOriginalRatio] = useState(true)
   const [showRetro, setShowRetro] = useState(false)
@@ -196,52 +202,94 @@ export function Gallery({ metadata }: GalleryProps) {
     })
   }, [selectedIds, displayedFiles, saveSelection, transferId])
 
-  const handleDownload = async () => {
-    if (selectedIds.size === 0) return
+  // Récupère les photos sélectionnées comme File[] (avec progression).
+  const fetchSelectedFiles = async (): Promise<File[]> => {
+    const selectedUuids = Array.from(selectedIds)
+    const files: File[] = []
 
+    for (let i = 0; i < selectedUuids.length; i++) {
+      const fileUuid = selectedUuids[i]
+      const fileInfo = fileMap.get(fileUuid)
+      if (!fileInfo?.url) continue
+
+      const fileName = fileInfo.fileName || `${fileUuid}.jpg`
+      setDownloadProgress({ current: i + 1, total: selectedUuids.length })
+
+      try {
+        files.push(await fetchAsFile(fileInfo.url, fileName, fileInfo.mimeType))
+      } catch (error) {
+        console.error(`Failed to fetch ${fileName}:`, error)
+      }
+    }
+
+    return files
+  }
+
+  // Fallback desktop / navigateur non compatible : téléchargement ZIP.
+  const downloadAsZip = async (files: File[]) => {
+    const zip = new JSZip()
+    files.forEach((file) => zip.file(file.name, file))
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' })
+    const url = URL.createObjectURL(zipBlob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `photos-${transferId.slice(0, 8)}.zip`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    posthog.capture('photo_downloaded', {
+      gallery_id: transferId,
+      gallery_name: albumName,
+      photo_count: files.length,
+      download_type: 'zip',
+    })
+  }
+
+  const trackNativeShare = (count: number) => {
+    posthog.capture('photo_downloaded', {
+      gallery_id: transferId,
+      gallery_name: albumName,
+      photo_count: count,
+      download_type: 'native-share',
+    })
+  }
+
+  const handleDownload = async () => {
+    if (selectedIds.size === 0 || isDownloading) return
+
+    setPendingShareFiles(null)
     setIsDownloading(true)
     setDownloadProgress({ current: 0, total: selectedIds.size })
 
     try {
-      const zip = new JSZip()
-      const selectedUuids = Array.from(selectedIds)
-
-      for (let i = 0; i < selectedUuids.length; i++) {
-        const fileUuid = selectedUuids[i]
-        const fileInfo = fileMap.get(fileUuid)
-        const fileName = fileInfo?.fileName || `${fileUuid}.jpg`
-
-        setDownloadProgress({ current: i + 1, total: selectedUuids.length })
-
-        try {
-          const response = await fetch(fileInfo?.url || '')
-
-          if (response.ok) {
-            const blob = await response.blob()
-            zip.file(fileName, blob)
-          }
-        } catch (error) {
-          console.error(`Failed to download ${fileName}:`, error)
-        }
+      const files = await fetchSelectedFiles()
+      if (files.length === 0) {
+        alert('Echec du telechargement. Veuillez reessayer.')
+        return
       }
 
-      const zipBlob = await zip.generateAsync({ type: 'blob' })
-      const url = URL.createObjectURL(zipBlob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `photos-${transferId.slice(0, 8)}.zip`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      // Mobile uniquement : partage natif → enregistrement dans Photos/Galerie.
+      // Sur desktop on garde le téléchargement ZIP direct.
+      if (isMobileDevice() && canShareFiles(files)) {
+        const result = await shareFiles(files)
+        if (result === 'shared') {
+          trackNativeShare(files.length)
+          setToastMessage(files.length > 1 ? 'Photos enregistrées' : 'Photo enregistrée')
+          return
+        }
+        if (result === 'cancelled') return
+        // Geste utilisateur expiré (iOS) : on garde les fichiers pour un 2e tap
+        if (result === 'gesture-lost') {
+          setPendingShareFiles(files)
+          return
+        }
+        // 'unsupported' / 'error' → fallback ZIP ci-dessous
+      }
 
-      // Track ZIP download
-      posthog.capture('photo_downloaded', {
-        gallery_id: transferId,
-        gallery_name: albumName,
-        photo_count: selectedIds.size,
-        download_type: 'zip',
-      })
+      await downloadAsZip(files)
     } catch (error) {
       console.error('Download error:', error)
       alert('Echec du telechargement. Veuillez reessayer.')
@@ -249,6 +297,21 @@ export function Gallery({ metadata }: GalleryProps) {
       setIsDownloading(false)
       setDownloadProgress({ current: 0, total: 0 })
     }
+  }
+
+  // 2e tap (fichiers déjà en mémoire) → partage sans await → geste préservé
+  const handleSaveToGallery = async () => {
+    if (!pendingShareFiles) return
+    const result = await shareFiles(pendingShareFiles)
+    if (result === 'shared') {
+      trackNativeShare(pendingShareFiles.length)
+      setToastMessage(pendingShareFiles.length > 1 ? 'Photos enregistrées' : 'Photo enregistrée')
+      setPendingShareFiles(null)
+    } else if (result === 'unsupported' || result === 'error') {
+      await downloadAsZip(pendingShareFiles)
+      setPendingShareFiles(null)
+    }
+    // 'cancelled'/'gesture-lost' → on garde le bouton pour réessayer
   }
 
   const openLightbox = (index: number) => {
@@ -454,7 +517,14 @@ export function Gallery({ metadata }: GalleryProps) {
           onClearSelection={handleClearSelection}
           isDownloading={isDownloading}
           downloadProgress={downloadProgress}
+          hasPendingShare={pendingShareFiles !== null}
+          onSaveToGallery={handleSaveToGallery}
         />
+      )}
+
+      {/* Confirmation flottante */}
+      {toastMessage && (
+        <Toast message={toastMessage} onDone={() => setToastMessage(null)} />
       )}
     </>
   )

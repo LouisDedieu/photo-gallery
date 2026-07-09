@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Autorise le test depuis un téléphone (réseau local + tunnels ngrok HTTPS)
+  allowedDevOrigins: ['192.168.1.68', '*.ngrok-free.app', '*.ngrok.io', '*.ngrok.app'],
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb',
