@@ -514,6 +514,19 @@ button, a, [role="button"] {
   background: var(--apple-blue-light);
 }
 
+.retro-button {
+  border: 1px solid var(--apple-blue);
+}
+
+.retro-button.active {
+  background: var(--apple-blue);
+  color: #fff;
+}
+
+.retro-button.active:hover {
+  background: var(--apple-blue);
+}
+
 .toggle-button {
   width: 32px;
   height: 32px;

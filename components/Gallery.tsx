@@ -32,6 +32,7 @@ export function Gallery({ metadata }: GalleryProps) {
   const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 })
   const [sessionId, setSessionId] = useState<string>('')
   const [useOriginalRatio, setUseOriginalRatio] = useState(true)
+  const [showRetro, setShowRetro] = useState(false)
 
   // Gallery reveal state - preload first batch before showing
   const [isGalleryReady, setIsGalleryReady] = useState(false)
@@ -43,6 +44,7 @@ export function Gallery({ metadata }: GalleryProps) {
   const photosViewedInLightboxRef = useRef<Set<number>>(new Set())
 
   const { transferId, galleryId, files, expiresAt } = metadata
+  const retroFiles = metadata.retroFiles ?? []
 
   // Calculate preload target based on actual file count
   useEffect(() => {
@@ -77,6 +79,10 @@ export function Gallery({ metadata }: GalleryProps) {
   const isAlbum = albumSlugs.has(transferId)
   const selectionEnabled = !isPortfolio // Albums et clients ont la sélection
 
+  // Retro: bouton affiché uniquement pour les albums disposant d'un sous-dossier retro
+  const hasRetro = isAlbum && retroFiles.length > 0
+  const displayedFiles = showRetro && hasRetro ? retroFiles : files
+
   // Generate album name from transferId
   const albumName = metadata.title || metadata.message || `Album ${transferId.slice(0, 8)}`
 
@@ -98,8 +104,8 @@ export function Gallery({ metadata }: GalleryProps) {
     })
   }, [transferId, albumName, galleryType, files.length])
 
-  // Create a map for quick file lookup
-  const fileMap = new Map(files.map((f) => [f.uuid, f]))
+  // Create a map for quick file lookup (main + retro for downloads)
+  const fileMap = new Map([...files, ...retroFiles].map((f) => [f.uuid, f]))
 
   // Initialize session and load saved selection (only for galleries with selection enabled)
   useEffect(() => {
@@ -143,54 +149,52 @@ export function Gallery({ metadata }: GalleryProps) {
 
   const handleSelect = useCallback(
     (fileUuid: string) => {
-      setSelectedIds((prev) => {
-        const newSet = new Set(prev)
-        const wasSelected = newSet.has(fileUuid)
+      const newSet = new Set(selectedIds)
+      const wasSelected = newSet.has(fileUuid)
 
-        if (wasSelected) {
-          newSet.delete(fileUuid)
-          track.photoDeselected({
-            gallery_id: transferId,
-            photo_uuid: fileUuid,
-            selection_count: newSet.size,
-          })
-        } else {
-          newSet.add(fileUuid)
-          track.photoSelected({
-            gallery_id: transferId,
-            photo_uuid: fileUuid,
-            selection_count: newSet.size,
-          })
-        }
-        saveSelection(newSet)
-        return newSet
-      })
+      if (wasSelected) {
+        newSet.delete(fileUuid)
+        track.photoDeselected({
+          gallery_id: transferId,
+          photo_uuid: fileUuid,
+          selection_count: newSet.size,
+        })
+      } else {
+        newSet.add(fileUuid)
+        track.photoSelected({
+          gallery_id: transferId,
+          photo_uuid: fileUuid,
+          selection_count: newSet.size,
+        })
+      }
+
+      setSelectedIds(newSet)
+      saveSelection(newSet)
     },
-    [saveSelection, transferId]
+    [selectedIds, saveSelection, transferId]
   )
 
   const handleClearSelection = useCallback(() => {
-    setSelectedIds((prev) => {
-      if (prev.size > 0) {
-        track.selectionCleared({
-          gallery_id: transferId,
-          cleared_count: prev.size,
-        })
-      }
-      return new Set()
-    })
+    if (selectedIds.size > 0) {
+      track.selectionCleared({
+        gallery_id: transferId,
+        cleared_count: selectedIds.size,
+      })
+    }
+    setSelectedIds(new Set())
     saveSelection(new Set())
-  }, [saveSelection, transferId])
+  }, [selectedIds, saveSelection, transferId])
 
   const handleSelectAll = useCallback(() => {
-    const allIds = new Set(files.map((f) => f.uuid))
+    const allIds = new Set(selectedIds)
+    displayedFiles.forEach((f) => allIds.add(f.uuid))
     setSelectedIds(allIds)
     saveSelection(allIds)
     track.selectionAll({
       gallery_id: transferId,
       selected_count: allIds.size,
     })
-  }, [files, saveSelection, transferId])
+  }, [selectedIds, displayedFiles, saveSelection, transferId])
 
   const handleDownload = async () => {
     if (selectedIds.size === 0) return
@@ -253,7 +257,7 @@ export function Gallery({ metadata }: GalleryProps) {
     track.lightboxOpened({
       gallery_id: transferId,
       photo_index: index,
-      photo_uuid: files[index]?.uuid || '',
+      photo_uuid: displayedFiles[index]?.uuid || '',
     })
     setLightboxIndex(index)
   }
@@ -281,14 +285,14 @@ export function Gallery({ metadata }: GalleryProps) {
   }
 
   const goToNext = () => {
-    if (lightboxIndex !== null && lightboxIndex < files.length - 1) {
+    if (lightboxIndex !== null && lightboxIndex < displayedFiles.length - 1) {
       const newIndex = lightboxIndex + 1
       photosViewedInLightboxRef.current.add(newIndex)
       setLightboxIndex(newIndex)
     }
   }
 
-  const currentFile = lightboxIndex !== null ? files[lightboxIndex] : null
+  const currentFile = lightboxIndex !== null ? displayedFiles[lightboxIndex] : null
 
   return (
     <>
@@ -306,12 +310,26 @@ export function Gallery({ metadata }: GalleryProps) {
             <div className="w-fit">
               <h1 className="apple-header-title">{albumName}</h1>
               <p className="apple-header-subtitle">
-                {files.length} photo{files.length > 1 ? 's' : ''}
+                {displayedFiles.length} photo{displayedFiles.length > 1 ? 's' : ''}
               </p>
             </div>
           </div>
 
           <div className="header-actions">
+            {/* Retro toggle (albums avec sous-dossier retro uniquement) */}
+            {hasRetro && (
+              <button
+                onClick={() => {
+                  setLightboxIndex(null)
+                  setShowRetro((prev) => !prev)
+                }}
+                className={`header-button retro-button${showRetro ? ' active' : ''}`}
+                title={showRetro ? 'Voir les photos originales' : 'Voir les photos retro'}
+              >
+                Retro
+              </button>
+            )}
+
             {/* Toggle view mode */}
             <button
               onClick={() => {
@@ -338,7 +356,7 @@ export function Gallery({ metadata }: GalleryProps) {
 
             {/* Select all / Deselect all (only for galleries with selection enabled) */}
             {selectionEnabled && (
-              selectedIds.size < files.length ? (
+              displayedFiles.some((f) => !selectedIds.has(f.uuid)) ? (
                 <button onClick={handleSelectAll} className="header-button">
                   Tout selectionner
                 </button>
@@ -358,7 +376,7 @@ export function Gallery({ metadata }: GalleryProps) {
             className={`masonry-grid ${isGalleryReady ? 'gallery-ready' : ''}`}
             columnClassName="masonry-column"
           >
-            {files.map((file, index) => (
+            {displayedFiles.map((file, index) => (
               <PhotoCard
                 key={file.uuid}
                 file={file}
@@ -376,7 +394,7 @@ export function Gallery({ metadata }: GalleryProps) {
           </Masonry>
         ) : (
           <div className={`photo-grid ${isGalleryReady ? 'gallery-ready' : ''}`}>
-            {files.map((file, index) => (
+            {displayedFiles.map((file, index) => (
               <PhotoCard
                 key={file.uuid}
                 file={file}
@@ -394,7 +412,7 @@ export function Gallery({ metadata }: GalleryProps) {
           </div>
         )}
 
-        {files.length === 0 && (
+        {displayedFiles.length === 0 && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <svg className="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -423,7 +441,7 @@ export function Gallery({ metadata }: GalleryProps) {
           onPrev={goToPrev}
           onNext={goToNext}
           hasPrev={lightboxIndex !== null && lightboxIndex > 0}
-          hasNext={lightboxIndex !== null && lightboxIndex < files.length - 1}
+          hasNext={lightboxIndex !== null && lightboxIndex < displayedFiles.length - 1}
           hideSelection={!selectionEnabled}
         />
       )}

@@ -1,4 +1,4 @@
-import { listFiles, getPublicUrl } from './cloudflare/r2'
+import { listFiles, getPublicUrl, type R2File } from './cloudflare/r2'
 import { TransferMetadata, GalleryFile } from './types'
 import { projects, albums, type Project } from './portfolio-config'
 
@@ -58,12 +58,18 @@ export async function getGalleryBySlug(slug: string): Promise<TransferMetadata> 
   // Filter only image files
   const imageFiles = files.filter((file) => isImageFile(file.name))
 
-  if (imageFiles.length === 0) {
+  // Retro subfolder inside the current folder: `<slug>/<slug>-retro/`
+  // Listing is recursive, so these files must be split out from the main gallery.
+  const retroPrefix = `${slug}/${slug}-retro/`
+  const mainImageFiles = imageFiles.filter((file) => !file.key.startsWith(retroPrefix))
+  const retroImageFiles = imageFiles.filter((file) => file.key.startsWith(retroPrefix))
+
+  if (mainImageFiles.length === 0 && retroImageFiles.length === 0) {
     throw new Error('Gallery not found or empty')
   }
 
   // Build gallery files with public URLs
-  const galleryFiles: GalleryFile[] = imageFiles.map((file) => {
+  const toGalleryFile = (file: R2File): GalleryFile => {
     const publicUrl = getPublicUrl(file.key)
 
     return {
@@ -74,7 +80,10 @@ export async function getGalleryBySlug(slug: string): Promise<TransferMetadata> 
       url: publicUrl,
       thumbnailUrl: publicUrl, // Next.js Image handles optimization
     }
-  })
+  }
+
+  const galleryFiles = mainImageFiles.map(toGalleryFile)
+  const retroFiles = retroImageFiles.map(toGalleryFile)
 
   const project = projects.find(p => p.slug === slug)
   const album = albums.find(a => a.slug === slug)
@@ -87,6 +96,7 @@ export async function getGalleryBySlug(slug: string): Promise<TransferMetadata> 
     expiresAt: '',
     createdAt: new Date().toISOString(),
     files: galleryFiles,
+    retroFiles: retroFiles.length > 0 ? retroFiles : undefined,
   }
 }
 
