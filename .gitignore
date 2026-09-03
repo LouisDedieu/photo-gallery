@@ -34,3 +34,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .idea/
+/workers/usage-monitor/node_modules
