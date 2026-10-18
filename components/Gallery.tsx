@@ -85,8 +85,8 @@ export function Gallery({ metadata }: GalleryProps) {
   const isAlbum = albumSlugs.has(transferId)
   const selectionEnabled = !isPortfolio // Albums et clients ont la sélection
 
-  // Retro: bouton affiché uniquement pour les albums disposant d'un sous-dossier retro
-  const hasRetro = isAlbum && retroFiles.length > 0
+  // Retro: bouton affiché pour les albums et galeries clients disposant d'un sous-dossier retro
+  const hasRetro = selectionEnabled && retroFiles.length > 0
   const displayedFiles = showRetro && hasRetro ? retroFiles : files
 
   // Generate album name from transferId
